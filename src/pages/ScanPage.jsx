@@ -5,6 +5,8 @@ import { MindARThree } from "mind-ar/dist/mindar-image-three.prod.js";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+// ── [SOUND] ──────────────────────────────────────────
+import { useSound } from "../hooks/useSound";
 
 // ── Marker config ───────────────────────────────────
 const MARKERS = [
@@ -266,6 +268,18 @@ export default function ScanPage() {
   const [activeMarker, setActiveMarker] = useState(MARKERS[0]);
   const [showControls, setShowControls] = useState(false);
 
+  // ── [SOUND] Inisialisasi hook — preload semua sound saat ScanPage mount ──
+  // Nama file sesuai yang sudah diunduh dan diletakkan di public/assets/sounds/
+  const { play } = useSound({
+    marker:      '/assets/sounds/Marker.mp3',
+    success:     '/assets/sounds/Benar.mp3',
+    error:       '/assets/sounds/Salah.mp3',
+    achievement: '/assets/sounds/Achievement.mp3',
+  }, {
+    volume:  0.7,
+    cooldown: 1200, // ms — cegah spam saat marker hilang-muncul cepat
+  });
+
   useEffect(() => {
     let mindarThree = null;
 
@@ -371,6 +385,13 @@ export default function ScanPage() {
               OBJ_COLOR[marker.objectId] || 0x52b788,
             );
             burstRef.current.push(burst);
+
+            // ── [SOUND] Marker detected ──────────────────────
+            // Hanya bunyi saat marker ini pertama kali ditemukan di session ini
+            // (pointsGivenRef.has() berarti sudah pernah scan sebelumnya di session ini)
+            if (!pointsGivenRef.current.has(marker.objectId)) {
+              play('marker');
+            }
           };
 
           anchor.onTargetLost = () => {
@@ -1033,9 +1054,11 @@ export default function ScanPage() {
                   trashSolvedRef.current.add(detectedId);
                   setShowTrash(false);
                   setTimeout(() => setTrashFeedback(null), 3000);
+                  play('success'); // ── [SOUND] Jawaban benar ──
                 } else {
                   setTrashFeedback("wrong");
                   setTimeout(() => setTrashFeedback(null), 2000);
+                  play('error');   // ── [SOUND] Jawaban salah ──
                 }
               }}
             >
@@ -1067,9 +1090,11 @@ export default function ScanPage() {
                   trashSolvedRef.current.add(detectedId);
                   setShowTrash(false);
                   setTimeout(() => setTrashFeedback(null), 3000);
+                  play('success'); // ── [SOUND] Jawaban benar ──
                 } else {
                   setTrashFeedback("wrong");
                   setTimeout(() => setTrashFeedback(null), 2000);
+                  play('error');   // ── [SOUND] Jawaban salah ──
                 }
               }}
             >

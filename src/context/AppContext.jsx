@@ -3,6 +3,18 @@ import { auth, db } from '../config/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
+// ── [SOUND] Helper ringan untuk play sound di luar komponen React ──
+// Tidak bisa pakai hook di sini karena AppContext bukan komponen biasa,
+// tapi audioContext sudah ada di ScanPage — pakai HTMLAudioElement saja yang lebih simpel.
+// HTMLAudioElement cocok untuk one-shot sound di context/non-hook environment.
+function playSound(src, volume = 0.7) {
+  try {
+    const audio = new Audio(src);
+    audio.volume = volume;
+    audio.play().catch(() => {}); // Silent fail jika autoplay policy block
+  } catch (_) {}
+}
+
 const AppContext = createContext(null);
 
 // ── Achievement definitions ─────────────────────────
@@ -96,6 +108,9 @@ export function AppProvider({ children }) {
     if (unlocked.length > 0) {
       setBadges(newBadges);
       await updateDoc(doc(db, 'users', uid), { badges: newBadges });
+      // ── [SOUND] Achievement unlock ────────────────────
+      // Hanya bunyi sekali meski unlock beberapa badge sekaligus
+      playSound('/assets/sounds/Achievement.mp3', 0.7);
       // Show toast for each new badge
       unlocked.forEach((b, i) => {
         setTimeout(() => {
